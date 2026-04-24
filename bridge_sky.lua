@@ -1,5 +1,5 @@
 repeat task.wait() until game:IsLoaded() and workspace.CurrentCamera
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/not-hm/LimeForRoblox/main/library.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/RealAquaVClip/LemonForRoblox/main/library.lua"))()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local TextChatService = game:GetService("TextChatService")
