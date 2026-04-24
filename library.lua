@@ -564,7 +564,7 @@ function Library:CreateMain()
 					Library.Stopped = true
 					task.wait(2)
 					writefile(CurrentGameConfig, readfile(GetConfig))
-					loadstring(game:HttpGet("https://raw.githubusercontent.com/RealAquaVClip/LemonForRoblox/refs/heads/main/Loader.lua"))()
+					loadstring(game:HttpGet("https://raw.githubusercontent.com/RealAquaVClip/LemonForRoblox/refs/heads/main/loader.lua"))()
 				end
 			end
 		end)
