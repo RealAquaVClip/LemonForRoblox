@@ -25,18 +25,18 @@ local Library = {
 
 local AutoSave = true
 local ConfigName = nil
-local LimeFolder = "Lime"
-local ConfigsFolder = LimeFolder .. "/configs"
-local KillsultsTable = LimeFolder .. "/killsults.lua"
+local LemonFolder = "Lemon"
+local ConfigsFolder = LemonFolder .. "/configs"
+local KillsultsTable = LemonFolder .. "/killsults.lua"
 local CurrentGameFolder = ConfigsFolder .. "/" .. game.PlaceId
-local CurrentGameConfig = LimeFolder .. "/" .. game.PlaceId .. ".lua"
+local CurrentGameConfig = LemonFolder .. "/" .. game.PlaceId .. ".lua"
 local ConfigTable = {Libraries = {ToggleButton = {}, MiniToggle = {}, Slider = {}, Dropdown = {}}}
 local Manager, ManagerMenu, ManagerBox, ManagerDelete, ManagerCreate, ManagerLoad
 
 if not isfolder(LimeFolder) then makefolder(LimeFolder) end
 if not isfolder(ConfigsFolder) then makefolder(ConfigsFolder) end
 if not isfolder(CurrentGameFolder) then makefolder(CurrentGameFolder) end
-if not isfile(KillsultsTable) then writefile(KillsultsTable, game:HttpGet("https://raw.githubusercontent.com/not-hm/LimeForRoblox/main/killsults.lua")) end
+if not isfile(KillsultsTable) then writefile(KillsultsTable, game:HttpGet("https://raw.githubusercontent.com/RealAquaVClip/Lem9nForRoblox/main/killsults.lua")) end
 if isfile(CurrentGameConfig) then
 	local GetMain = readfile(CurrentGameConfig)
 	if GetMain and GetMain ~= "" then
@@ -63,7 +63,7 @@ if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and no
 		Library.DeviceType = "Touch"
 		task.spawn(function()
 			StarterGui:SetCore("SendNotification", { 
-				Title = "Lime",
+				Title = "Lemon",
 				Text = "Loaded. Press click the icon.",
 				Icon = "rbxassetid://12435962893",
 				Duration = 3,
@@ -75,7 +75,7 @@ elseif not UserInputService.TouchEnabled and UserInputService.KeyboardEnabled an
 		Library.DeviceType = "Mouse"
 		task.spawn(function()
 			StarterGui:SetCore("SendNotification", { 
-				Title = "Lime",
+				Title = "Lemon",
 				Text = "Loaded. Press RightShift",
 				Icon = "rbxassetid://12435962893",
 				Duration = 3,
@@ -87,7 +87,7 @@ elseif UserInputService.TouchEnabled and UserInputService.KeyboardEnabled and Us
 		Library.DeviceType = "Mouse"
 		task.spawn(function()
 			StarterGui:SetCore("SendNotification", { 
-				Title = "Lime",
+				Title = "Lemon",
 				Text = "Loaded. Press RightShift",
 				Icon = "rbxassetid://12435962893",
 				Duration = 3,
@@ -221,7 +221,7 @@ function Library:CreateMain()
 		MainOpen.Size = UDim2.new(0, 25, 0, 25)
 		MainOpen.ZIndex = 5
 		MainOpen.Font = Enum.Font.SourceSans
-		MainOpen.Text = "Lime"
+		MainOpen.Text = "Lemon"
 		MainOpen.TextColor3 = Color3.fromRGB(255, 255, 255)
 		MainOpen.TextScaled = true
 		MainOpen.TextSize = 14.000
@@ -266,7 +266,7 @@ function Library:CreateMain()
 	Watermark.Position = UDim2.new(0, 20, 0, 15)
 	Watermark.Size = UDim2.new(0, 345, 0, 30)
 	Watermark.RichText = true
-	Watermark.Text = "Lime"
+	Watermark.Text = "Lemon"
 	Watermark.Font = Enum.Font.SourceSans
 	Watermark.TextColor3 = Color3.fromRGB(255, 0, 127)
 	Watermark.TextScaled = true
@@ -564,7 +564,7 @@ function Library:CreateMain()
 					Library.Stopped = true
 					task.wait(2)
 					writefile(CurrentGameConfig, readfile(GetConfig))
-					loadstring(game:HttpGet("https://raw.githubusercontent.com/not-hm/LimeForRoblox/refs/heads/main/Loader.lua"))()
+					loadstring(game:HttpGet("https://raw.githubusercontent.com/RealAquaVClip/LemonForRoblox/refs/heads/main/Loader.lua"))()
 				end
 			end
 		end)
