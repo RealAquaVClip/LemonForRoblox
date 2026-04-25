@@ -1610,3 +1610,171 @@ task.defer(function()
 		end
 	})
 end)
+
+-- Backtrack Module
+local BacktrackGhost = nil
+local BacktrackEnabled = false
+local BacktrackDelay = 150 -- ms
+local BacktrackTarget = nil
+local BacktrackRecords = {}
+
+local function GetBacktrackTarget()
+    local maxDist = 12 -- you can adjust or make this a slider later
+    local closest = nil
+    local closestDist = maxDist
+    local myTeam = LocalPlayer.Team
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= myTeam then
+            local char = player.Character
+            if char and IsAlive(char) and char.PrimaryPart then
+                if LocalPlayer.Character and LocalPlayer.Character.PrimaryPart then
+                    local dist = (LocalPlayer.Character.PrimaryPart.Position - char.PrimaryPart.Position).Magnitude
+                    if dist < closestDist then
+                        closest = player
+                        closestDist = dist
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+task.defer(function()
+    local BacktrackToggle = TabSections.Visual:CreateToggle({
+        Name = "Backtrack",
+        Callback = function(callback)
+            BacktrackEnabled = callback
+            if callback then
+                -- Create the ghost part
+                BacktrackGhost = Instance.new("Part")
+                BacktrackGhost.Name = "BacktrackGhost"
+                BacktrackGhost.Size = Vector3.new(0.5, 0.5, 0.5)
+                BacktrackGhost.Shape = Enum.PartType.Cylinder
+                BacktrackGhost.Anchored = true
+                BacktrackGhost.CanCollide = false
+                BacktrackGhost.Transparency = 0.5
+                BacktrackGhost.Color = Color3.new(0, 1, 0)
+                BacktrackGhost.Material = Enum.Material.Neon
+                BacktrackGhost.Parent = workspace
+
+                -- Record positions continuously
+                task.spawn(function()
+                    while BacktrackEnabled do
+                        local target = GetBacktrackTarget()
+                        if target then
+                            BacktrackTarget = target
+                            local char = target.Character
+                            if char and IsAlive(char) and char.PrimaryPart then
+                                if not BacktrackRecords[target.UserId] then
+                                    BacktrackRecords[target.UserId] = {}
+                                end
+                                table.insert(BacktrackRecords[target.UserId], {
+                                    TimeMs = os.clock() * 1000,
+                                    Position = char.PrimaryPart.Position,
+                                    CFrame = char.PrimaryPart.CFrame
+                                })
+                                -- Keep only last 200 entries
+                                while #BacktrackRecords[target.UserId] > 200 do
+                                    table.remove(BacktrackRecords[target.UserId], 1)
+                                end
+                            end
+                        else
+                            BacktrackTarget = nil
+                        end
+                        task.wait(0.016) -- ~60fps
+                    end
+                end)
+
+                -- Update ghost position based on delay
+                task.spawn(function()
+                    while BacktrackEnabled do
+                        if BacktrackTarget and BacktrackRecords[BacktrackTarget.UserId] and BacktrackGhost then
+                            local records = BacktrackRecords[BacktrackTarget.UserId]
+                            local targetTime = os.clock() * 1000 - BacktrackDelay
+                            local bestMatch = records[1]
+                            local bestDiff = math.huge
+                            for _, rec in ipairs(records) do
+                                local diff = math.abs(rec.TimeMs - targetTime)
+                                if diff < bestDiff then
+                                    bestDiff = diff
+                                    bestMatch = rec
+                                end
+                            end
+                            if bestMatch then
+                                BacktrackGhost.CFrame = bestMatch.CFrame
+                            end
+                        end
+                        task.wait()
+                    end
+                end)
+            else
+                -- Cleanup when disabled
+                if BacktrackGhost then
+                    BacktrackGhost:Destroy()
+                    BacktrackGhost = nil
+                end
+                BacktrackRecords = {}
+                BacktrackTarget = nil
+            end
+        end
+    })
+
+    BacktrackToggle:CreateSlider({
+        Name = "Delay (ms)",
+        Min = 50,
+        Max = 500,
+        Default = 150,
+        Callback = function(value)
+            BacktrackDelay = value
+        end
+    })
+end)
+
+-- FakeLag Module
+local FakeLagEnabled = false
+local LagAmount = 100 -- ms
+local LagConnection = nil
+
+task.defer(function()
+    local FakeLagToggle = TabSections.Exploit:CreateToggle({
+        Name = "FakeLag",
+        Callback = function(callback)
+            FakeLagEnabled = callback
+            if callback then
+                -- Hook into the network receive function (similar pattern to Velocity)
+                local Connection = BridgeDuel.Knit.GetService("CombatService").KnockBackApplied._re
+                repeat task.wait() until Connection and Connection.OnClientEvent
+                
+                -- Store original function
+                local originalFunction = Connection.OnClientEvent
+                
+                -- Override with delayed execution
+                LagConnection = originalFunction
+                Connection.OnClientEvent = function(...)
+                    if FakeLagEnabled then
+                        task.wait(LagAmount / 1000) -- Convert ms to seconds
+                    end
+                    return LagConnection(...)
+                end
+            else
+                -- Restore original (simplified cleanup)
+                if LagConnection then
+                    -- Note: Exact restoration depends on the service structure
+                    -- This pattern mirrors the Velocity module cleanup
+                    LagConnection = nil
+                end
+            end
+        end
+    })
+
+    FakeLagToggle:CreateSlider({
+        Name = "Amount (ms)",
+        Min = 0,
+        Max = 500,
+        Default = 100,
+        Callback = function(value)
+            LagAmount = value
+        end
+    })
+end)
