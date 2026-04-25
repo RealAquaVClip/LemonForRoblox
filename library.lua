@@ -33,7 +33,7 @@ local CurrentGameConfig = LemonFolder .. "/" .. game.PlaceId .. ".lua"
 local ConfigTable = {Libraries = {ToggleButton = {}, MiniToggle = {}, Slider = {}, Dropdown = {}}}
 local Manager, ManagerMenu, ManagerBox, ManagerDelete, ManagerCreate, ManagerLoad
 
-if not isfolder(LimeFolder) then makefolder(LimeFolder) end
+if not isfolder(LemonFolder) then makefolder(LemonFolder) end
 if not isfolder(ConfigsFolder) then makefolder(ConfigsFolder) end
 if not isfolder(CurrentGameFolder) then makefolder(CurrentGameFolder) end
 if not isfile(KillsultsTable) then writefile(KillsultsTable, game:HttpGet("https://raw.githubusercontent.com/RealAquaVClip/LemonForRoblox/main/killsults.lua")) end
