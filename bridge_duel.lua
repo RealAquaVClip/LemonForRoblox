@@ -1765,6 +1765,229 @@ task.defer(function()
                     LagConnection = nil
                 end
             end
+-- Backtrack Module (Fixed Visual)
+local BacktrackGhost = nil
+local BacktrackEnabled = false
+local BacktrackDelay = 150
+local BacktrackTarget = nil
+local BacktrackRecords = {}
+
+local function GetBacktrackTarget()
+    local maxDist = 12
+    local closest = nil
+    local closestDist = maxDist
+    local myTeam = LocalPlayer.Team
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= myTeam then
+            local char = player.Character
+            if char and IsAlive(char) and char.PrimaryPart then
+                if LocalPlayer.Character and LocalPlayer.Character.PrimaryPart then
+                    local dist = (LocalPlayer.Character.PrimaryPart.Position - char.PrimaryPart.Position).Magnitude
+                    if dist < closestDist then
+                        closest = player
+                        closestDist = dist
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+task.defer(function()
+    local BacktrackToggle = TabSections.Visual:CreateToggle({
+        Name = "Backtrack",
+        Callback = function(callback)
+            BacktrackEnabled = callback
+            if callback then
+                -- Create the ghost part immediately
+                if not BacktrackGhost then
+                    BacktrackGhost = Instance.new("Part")
+                    BacktrackGhost.Name = "BacktrackGhost"
+                    BacktrackGhost.Size = Vector3.new(1, 1, 1)
+                    BacktrackGhost.Anchored = true
+                    BacktrackGhost.CanCollide = false
+                    BacktrackGhost.Transparency = 0.5
+                    BacktrackGhost.Color = Color3.new(0, 1, 0)
+                    BacktrackGhost.Material = Enum.Material.Neon
+                    BacktrackGhost.Parent = workspace
+                end
+
+                task.spawn(function()
+                    while BacktrackEnabled do
+                        local target = GetBacktrackTarget()
+                        if target then
+                            BacktrackTarget = target
+                            local char = target.Character
+                            if char and IsAlive(char) and char.PrimaryPart then
+                                if not BacktrackRecords[target.UserId] then
+                                    BacktrackRecords[target.UserId] = {}
+                                end
+                                table.insert(BacktrackRecords[target.UserId], {
+                                    TimeMs = os.clock() * 1000,
+                                    CFrame = char.PrimaryPart.CFrame
+                                })
+                                while #BacktrackRecords[target.UserId] > 200 do
+                                    table.remove(BacktrackRecords[target.UserId], 1)
+                                end
+                            end
+                        end
+                        task.wait(0.016)
+                    end
+                end)
+
+                task.spawn(function()
+                    while BacktrackEnabled and BacktrackGhost do
+                        if BacktrackTarget and BacktrackRecords[BacktrackTarget.UserId] then
+                            local records = BacktrackRecords[BacktrackTarget.UserId]
+                            if #records > 0 then
+                                local targetTime = os.clock() * 1000 - BacktrackDelay
+                                local bestMatch = records[1]
+                                local bestDiff = math.huge
+                                for _, rec in ipairs(records) do
+                                    local diff = math.abs(rec.TimeMs - targetTime)
+                                    if diff < bestDiff then
+                                        bestDiff = diff
+                                        bestMatch = rec
+                                    end
+                                end
+                                if bestMatch then
+                                    BacktrackGhost.CFrame = bestMatch.CFrame
+                                end
+                            end
+                        end
+                        task.wait()
+                    end
+                end)
+            else
+                if BacktrackGhost then
+                    BacktrackGhost:Destroy()
+                    BacktrackGhost = nil
+                end
+                BacktrackRecords = {}
+                BacktrackTarget = nil
+            end
+        end
+    })
+
+    BacktrackToggle:CreateSlider({
+        Name = "Delay (ms)",
+        Min = 50,
+        Max = 500,
+        Default = 150,
+        Callback = function(value)
+            BacktrackDelay = value
+        end
+    })
+end)
+
+-- FakeLag Module with Visual Clones
+local FakeLagEnabled = false
+local LagAmount = 100
+local LagConnection = nil
+local FakeGhost = nil  -- Green: lagged position (what others see)
+local RealGhost = nil  -- Red: real position (where you actually are)
+local PositionHistory = {}
+
+task.defer(function()
+    local FakeLagToggle = TabSections.Exploit:CreateToggle({
+        Name = "FakeLag",
+        Callback = function(callback)
+            FakeLagEnabled = callback
+            if callback then
+                -- Create both visual clones
+                if not FakeGhost then
+                    FakeGhost = Instance.new("Part")
+                    FakeGhost.Name = "FakeGhost"
+                    FakeGhost.Size = Vector3.new(1, 1, 1)
+                    FakeGhost.Anchored = true
+                    FakeGhost.CanCollide = false
+                    FakeGhost.Transparency = 0.5
+                    FakeGhost.Color = Color3.new(0, 1, 0)  -- Green: lagged
+                    FakeGhost.Material = Enum.Material.Neon
+                    FakeGhost.Parent = workspace
+                end
+                if not RealGhost then
+                    RealGhost = Instance.new("Part")
+                    RealGhost.Name = "RealGhost"
+                    RealGhost.Size = Vector3.new(1, 1, 1)
+                    RealGhost.Anchored = true
+                    RealGhost.CanCollide = false
+                    RealGhost.Transparency = 0.5
+                    RealGhost.Color = Color3.new(1, 0, 0)  -- Red: real
+                    RealGhost.Material = Enum.Material.Neon
+                    RealGhost.Parent = workspace
+                end
+
+                -- Hook outgoing network to add delay
+                local Connection = BridgeDuel.Blink.player_state
+                if Connection and Connection.fire then
+                    local oldFire = Connection.fire
+                    Connection.fire = function(self, ...)
+                        if FakeLagEnabled then
+                            task.wait(LagAmount / 1000)
+                        end
+                        return oldFire(self, ...)
+                    end
+                end
+
+                -- Record positions for visual
+                task.spawn(function()
+                    while FakeLagEnabled do
+                        if IsAlive(LocalPlayer.Character) then
+                            local now = os.clock() * 1000
+                            local cframe = LocalPlayer.Character.PrimaryPart.CFrame
+                            table.insert(PositionHistory, {
+                                TimeMs = now,
+                                CFrame = cframe
+                            })
+                            while #PositionHistory > 200 do
+                                table.remove(PositionHistory, 1)
+                            end
+                        end
+                        task.wait(0.016)
+                    end
+                end)
+
+                -- Update both ghosts
+                task.spawn(function()
+                    while FakeLagEnabled do
+                        if IsAlive(LocalPlayer.Character) and FakeGhost and RealGhost then
+                            -- Red ghost follows real position instantly
+                            RealGhost.CFrame = LocalPlayer.Character.PrimaryPart.CFrame
+                            
+                            -- Green ghost shows delayed position
+                            if #PositionHistory > 0 then
+                                local targetTime = os.clock() * 1000 - LagAmount
+                                local bestMatch = PositionHistory[1]
+                                local bestDiff = math.huge
+                                for _, rec in ipairs(PositionHistory) do
+                                    local diff = math.abs(rec.TimeMs - targetTime)
+                                    if diff < bestDiff then
+                                        bestDiff = diff
+                                        bestMatch = rec
+                                    end
+                                end
+                                if bestMatch then
+                                    FakeGhost.CFrame = bestMatch.CFrame
+                                end
+                            end
+                        end
+                        task.wait()
+                    end
+                end)
+            else
+                -- Cleanup
+                if FakeGhost then
+                    FakeGhost:Destroy()
+                    FakeGhost = nil
+                end
+                if RealGhost then
+                    RealGhost:Destroy()
+                    RealGhost = nil
+                end
+                PositionHistory = {}
+            end
         end
     })
 
